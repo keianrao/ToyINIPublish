@@ -15,21 +15,103 @@ copyright */
 public class
 INIApi {
 
-    private static Dictionary<string, string>
-    interim = new();
-
-//  ---%-@-%---
-
     public static void
     Put(string filename, string key, string value)
     {
-        interim.Add(key, value);
+        SortedDictionary<string, string> interim =
+            IniFileToSortedDictionary(filename);
+
+        interim[key] = value;
+        
+        SortedDictionaryToIniFile(interim, filename);
     }
 
     public static string?
     Get(string filename, string key)
     {
-        return interim.GetValueOrDefault(key);
+        SortedDictionary<string, string> interim = 
+            IniFileToSortedDictionary(filename);
+
+        foreach (KeyValuePair<string, string> e in interim)
+        {
+            Console.WriteLine(e);
+        }
+
+        return IniFileToSortedDictionary(filename)
+            .GetValueOrDefault(key);
+    }
+
+//  ---%-@-%---
+
+    private static SortedDictionary<string, string>
+    IniFileToSortedDictionary(string filename)
+    {
+        SortedDictionary<string, string> returnee = new();
+
+        string[] lines = File.ReadAllLines(filename);
+        string category = "";
+        foreach (string line in lines)
+        {
+            Boolean catStart = line.StartsWith("[");
+            Boolean catEnd = line.TrimEnd().EndsWith("]");
+            if (catStart && catEnd)
+            {
+                category = line[1..(line.TrimEnd().Length - 1)];
+                category += ".";
+                continue; 
+            }
+
+            if (line.Trim().Equals(string.Empty))
+                continue;
+
+            int eqOffset = line.IndexOf("=");
+            if (eqOffset != -1)
+            {
+                string key = line.Substring(0, eqOffset).Trim();
+                string value = line.Substring(eqOffset + 1).Trim();
+                returnee[category + key] = value;
+                continue;
+            }
+
+            // Invalid line in INI. Ignore.
+            continue;
+        }
+
+        return returnee;
+    }
+
+    private static void
+    SortedDictionaryToIniFile(
+        SortedDictionary<string, string> dictionary,
+        string filename)
+    {
+        List<string> outputLines = new();
+
+        string lastCategory = "";
+        foreach (KeyValuePair<string, string> e in dictionary)
+        {
+            string category = "";
+            string key = e.Key;
+
+            int dotOffset = e.Key.LastIndexOf(".");
+            if (dotOffset != -1)
+            {
+                category = e.Key.Substring(0, dotOffset);
+                key = e.Key.Substring(dotOffset + 1);
+            }
+
+            if (!category.Equals(lastCategory))
+            {
+                outputLines.Add("");
+                outputLines.Add("[" + category + "]");               
+            }
+
+            outputLines.Add(key + " = " + e.Value);
+
+            lastCategory = category;
+        }
+
+        File.WriteAllLines(filename, outputLines);
     }
 
 }
