@@ -21,6 +21,7 @@ INIApi {
         SortedDictionary<string, string> interim =
             IniFileToSortedDictionary(filename);
 
+        key = TransformNonCategorisedKey(key);
         interim[key] = value;
         
         SortedDictionaryToIniFile(interim, filename);
@@ -30,7 +31,7 @@ INIApi {
     Get(string filename, string key)
     {
         return IniFileToSortedDictionary(filename)
-            .GetValueOrDefault(key);
+            .GetValueOrDefault(TransformNonCategorisedKey(key));
     }
 
     public static bool
@@ -41,7 +42,13 @@ INIApi {
         }.Contains(filename);
     }
 
-//  ---%-@-%---
+//   -  -%-  -
+
+    private static string
+    TransformNonCategorisedKey(string key)
+    {
+        return !key.Contains('.') ? "." + key : key;
+    }
 
     private static SortedDictionary<string, string>
     IniFileToSortedDictionary(string filename)
@@ -49,7 +56,7 @@ INIApi {
         SortedDictionary<string, string> returnee = new();
 
         string[] lines = File.ReadAllLines(filename);
-        string category = "";
+        string category = ".";
         foreach (string line in lines)
         {
             bool catStart = line.StartsWith('[');
@@ -90,35 +97,15 @@ INIApi {
         string lastCategory = "";
         foreach (KeyValuePair<string, string> e in dictionary)
         {
-            string category = "";
-            string key = e.Key;
-
             int dotOffset = e.Key.LastIndexOf('.');
-            if (dotOffset != -1)
-            {
-                category = e.Key[0..dotOffset];
-                key = e.Key[(dotOffset + 1)..];
-            }
+            string category = e.Key[0..dotOffset];
+            string key = e.Key[(dotOffset + 1)..];
 
             if (!category.Equals(lastCategory))
             {
                 outputLines.Add("");
                 outputLines.Add("[" + category + "]");               
             }
-            /*
-            * (悪) Known bug: When keys without categories are
-            * added, they are sorted in the dictionary by the
-            * basename itself, which can be farther down than
-            * the intended beginning of the file before any
-            * of the categories.
-            *
-            * There's no hack through sorting we can do, so
-            * mitigation is probably prepending a period to
-            * non-category keys so that they have a blank
-            * category. It would make things wrong for direct
-            * dictionary lookup, so INIApi.GetValue would
-            * have to be the one to specially compensate.
-            */
 
             outputLines.Add(key + " = " + e.Value);
 
