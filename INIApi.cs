@@ -33,6 +33,14 @@ INIApi {
             .GetValueOrDefault(key);
     }
 
+    public static bool
+    IsAllowedINIFilename(string filename)
+    {
+        return new string[] {
+            "colours.ini"
+        }.Contains(filename);
+    }
+
 //  ---%-@-%---
 
     private static SortedDictionary<string, string>
@@ -44,8 +52,8 @@ INIApi {
         string category = "";
         foreach (string line in lines)
         {
-            Boolean catStart = line.StartsWith("[");
-            Boolean catEnd = line.TrimEnd().EndsWith("]");
+            bool catStart = line.StartsWith('[');
+            bool catEnd = line.TrimEnd().EndsWith(']');
             if (catStart && catEnd)
             {
                 category = line[1..(line.TrimEnd().Length - 1)];
@@ -56,11 +64,11 @@ INIApi {
             if (line.Trim().Equals(string.Empty))
                 continue;
 
-            int eqOffset = line.IndexOf("=");
+            int eqOffset = line.IndexOf('=');
             if (eqOffset != -1)
             {
-                string key = line.Substring(0, eqOffset).Trim();
-                string value = line.Substring(eqOffset + 1).Trim();
+                string key = line[0..eqOffset].Trim();
+                string value = line[(eqOffset + 1)..].Trim();
                 returnee[category + key] = value;
                 continue;
             }
@@ -77,7 +85,7 @@ INIApi {
         SortedDictionary<string, string> dictionary,
         string filename)
     {
-        List<string> outputLines = new();
+        List<string> outputLines = [];
 
         string lastCategory = "";
         foreach (KeyValuePair<string, string> e in dictionary)
@@ -85,11 +93,11 @@ INIApi {
             string category = "";
             string key = e.Key;
 
-            int dotOffset = e.Key.LastIndexOf(".");
+            int dotOffset = e.Key.LastIndexOf('.');
             if (dotOffset != -1)
             {
-                category = e.Key.Substring(0, dotOffset);
-                key = e.Key.Substring(dotOffset + 1);
+                category = e.Key[0..dotOffset];
+                key = e.Key[(dotOffset + 1)..];
             }
 
             if (!category.Equals(lastCategory))
@@ -97,6 +105,20 @@ INIApi {
                 outputLines.Add("");
                 outputLines.Add("[" + category + "]");               
             }
+            /*
+            * (悪) Known bug: When keys without categories are
+            * added, they are sorted in the dictionary by the
+            * basename itself, which can be farther down than
+            * the intended beginning of the file before any
+            * of the categories.
+            *
+            * There's no hack through sorting we can do, so
+            * mitigation is probably prepending a period to
+            * non-category keys so that they have a blank
+            * category. It would make things wrong for direct
+            * dictionary lookup, so INIApi.GetValue would
+            * have to be the one to specially compensate.
+            */
 
             outputLines.Add(key + " = " + e.Value);
 
