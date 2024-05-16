@@ -32,11 +32,6 @@ INIApi {
         SortedDictionary<string, string> interim = 
             IniFileToSortedDictionary(filename);
 
-        foreach (KeyValuePair<string, string> e in interim)
-        {
-            Console.WriteLine(e);
-        }
-
         return IniFileToSortedDictionary(filename)
             .GetValueOrDefault(key);
     }
