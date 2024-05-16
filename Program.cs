@@ -12,6 +12,7 @@ You should have received a copy of the GNU General Public License along with thi
 copyright */
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddMvc();
 builder.Services.AddControllers();
 
 var app = builder.Build();

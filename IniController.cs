@@ -12,8 +12,10 @@ You should have received a copy of the GNU General Public License along with thi
 copyright */
 
 using Microsoft.AspNetCore.Mvc;
-using System.Text;
-using System.Text.Json.Nodes;
+using FluentValidation;
+using FluentValidationResult = FluentValidation.Results
+    .ValidationResult;
+using System.Linq.Expressions;
 
 public class
 IniController : Controller
@@ -33,67 +35,115 @@ IniController : Controller
     public IResult
     PutKeyValue(string alias, [FromBody] PutKeyValueRequest body)
     {
-        string filename = alias + ".ini";
-        if (!IsAllowedINIFilename(filename))
-            return Results.BadRequest(
-                DisallowedINIFilenameError(alias));
+        FluentValidationResult valid1 = new IniFileAliasValidator()
+            .Validate(alias);
+        FluentValidationResult valid2 = new PutKeyValueValidator()
+            .Validate(body);
+        if (!valid1.IsValid) return Results
+            .ValidationProblem(valid1.ToDictionary());
+        if (!valid2.IsValid) return Results
+            .ValidationProblem(valid2.ToDictionary());
 
-        INIApi.Put(filename, body.key, body.value);
+        string filename = alias + ".ini";
+
+        INIApi.Put(filename, body.Key, body.Value);
         return Results.Ok();
     }
 
     public IResult
     GetValue(string alias, [FromBody] GetValueRequest body)
     {
+        FluentValidationResult valid1 = new IniFileAliasValidator()
+            .Validate(alias);
+        FluentValidationResult valid2 = new GetValueValidator()
+            .Validate(body);
+        if (!valid1.IsValid) return Results
+            .ValidationProblem(valid1.ToDictionary());
+        if (!valid2.IsValid) return Results
+            .ValidationProblem(valid2.ToDictionary());
+
         string filename = alias + ".ini";
-        if (!IsAllowedINIFilename(filename))
-            return Results.BadRequest(
-                DisallowedINIFilenameError(alias));
         
-        string? value = INIApi.Get(filename, body.key);
+        string? value = INIApi.Get(filename, body.Key);
         if (value == null) return Results.NotFound();
         else return Results.Ok<string>(value);
     }
 
-//  ---%-@-%---
+}
 
-    private static Boolean
-    IsAllowedINIFilename(string filename)
+public class
+PutKeyValueRequest {
+
+    public string Key { get; set; }
+    public string Value { get; set; }
+
+}
+
+public class
+GetValueRequest {
+
+    public string Key { get; set; }
+
+}
+
+public class
+IniFileAliasValidator : AbstractValidator<string> {
+
+    public
+    IniFileAliasValidator()
     {
-        return new string[] {
-            "colours.ini"
-        }.Contains(filename);
+        RuleFor(s => s).NotNull();
+        RuleFor(s => s).Must(s => !s.EndsWith(".ini"));
+        RuleFor(s => s).Must(s =>
+            INIApi.IsAllowedINIFilename(s + ".ini"));
     }
 
-    private static JsonObject
-    DisallowedINIFilenameError(string alias)
+}
+
+public class
+PutKeyValueValidator : AbstractValidator<PutKeyValueRequest> {
+
+    public
+    PutKeyValueValidator()
     {
-        string msg =
-            "'" + alias + "' " +
-            "is not an allowed INI file alias.";
-        return new JsonObject() { { "error", msg } };
+        RuleFor(r => r.Key)
+            .NotEmpty()
+            .Must(s => Sans(s, ' '))
+            .WithMessage("Key must not have spaces.")
+            .Must(s => Sans(s, '='))
+            .WithMessage("Key must not have an equals sign.");
+        RuleFor(r => r.Value)
+            .NotNull()
+            .Must(s => Sans(s, '\n'))
+            .WithMessage("Key must not have newlines.");
     }
 
-    
-//  ---%-@-%---
-
-    public class
-    PutKeyValueRequest {
-
-        public required string
-        key { get; set; }
-
-        public required string
-        value { get; set; }
-
+    private static bool
+    Sans(string s, char c)
+    {
+        return s == null || !s.Contains(c);
     }
 
-    public class
-    GetValueRequest {
+}
 
-        public required string
-        key { get; set; }
+public class
+GetValueValidator : AbstractValidator<GetValueRequest> {
 
+    public
+    GetValueValidator()
+    {
+        RuleFor(r => r.Key)
+            .NotEmpty()
+            .Must(s => Sans(s, ' '))
+            .WithMessage("Key must not have spaces.")
+            .Must(s => Sans(s, '='))
+            .WithMessage("Key must not have an equals sign.");
+    }
+
+    private static bool
+    Sans(string s, char c)
+    {
+        return s == null || !s.Contains(c);
     }
 
 }

@@ -21,6 +21,7 @@ INIApi {
         SortedDictionary<string, string> interim =
             IniFileToSortedDictionary(filename);
 
+        key = TransformNonCategorisedKey(key);
         interim[key] = value;
         
         SortedDictionaryToIniFile(interim, filename);
@@ -30,10 +31,24 @@ INIApi {
     Get(string filename, string key)
     {
         return IniFileToSortedDictionary(filename)
-            .GetValueOrDefault(key);
+            .GetValueOrDefault(TransformNonCategorisedKey(key));
     }
 
-//  ---%-@-%---
+    public static bool
+    IsAllowedINIFilename(string filename)
+    {
+        return new string[] {
+            "colours.ini"
+        }.Contains(filename);
+    }
+
+//   -  -%-  -
+
+    private static string
+    TransformNonCategorisedKey(string key)
+    {
+        return !key.Contains('.') ? "." + key : key;
+    }
 
     private static SortedDictionary<string, string>
     IniFileToSortedDictionary(string filename)
@@ -41,11 +56,11 @@ INIApi {
         SortedDictionary<string, string> returnee = new();
 
         string[] lines = File.ReadAllLines(filename);
-        string category = "";
+        string category = ".";
         foreach (string line in lines)
         {
-            Boolean catStart = line.StartsWith("[");
-            Boolean catEnd = line.TrimEnd().EndsWith("]");
+            bool catStart = line.StartsWith('[');
+            bool catEnd = line.TrimEnd().EndsWith(']');
             if (catStart && catEnd)
             {
                 category = line[1..(line.TrimEnd().Length - 1)];
@@ -56,11 +71,11 @@ INIApi {
             if (line.Trim().Equals(string.Empty))
                 continue;
 
-            int eqOffset = line.IndexOf("=");
+            int eqOffset = line.IndexOf('=');
             if (eqOffset != -1)
             {
-                string key = line.Substring(0, eqOffset).Trim();
-                string value = line.Substring(eqOffset + 1).Trim();
+                string key = line[0..eqOffset].Trim();
+                string value = line[(eqOffset + 1)..].Trim();
                 returnee[category + key] = value;
                 continue;
             }
@@ -77,20 +92,14 @@ INIApi {
         SortedDictionary<string, string> dictionary,
         string filename)
     {
-        List<string> outputLines = new();
+        List<string> outputLines = [];
 
         string lastCategory = "";
         foreach (KeyValuePair<string, string> e in dictionary)
         {
-            string category = "";
-            string key = e.Key;
-
-            int dotOffset = e.Key.LastIndexOf(".");
-            if (dotOffset != -1)
-            {
-                category = e.Key.Substring(0, dotOffset);
-                key = e.Key.Substring(dotOffset + 1);
-            }
+            int dotOffset = e.Key.LastIndexOf('.');
+            string category = e.Key[0..dotOffset];
+            string key = e.Key[(dotOffset + 1)..];
 
             if (!category.Equals(lastCategory))
             {
