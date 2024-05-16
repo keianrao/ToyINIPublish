@@ -17,6 +17,6 @@ builder.Services.AddControllers();
 var app = builder.Build();
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Ini}/{name=colours}/{action=Help}"); 
+    pattern: "{controller=Ini}/{alias=colours}/{action=Help}"); 
 
 app.Run();

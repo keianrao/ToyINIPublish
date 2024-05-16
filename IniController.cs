@@ -21,39 +21,38 @@ IniController : Controller
     public string
     Help()
     {
-        StringBuilder b = new StringBuilder();
-        b.Append("/ini/<INI file alias>/PutKeyValue");
-        b.Append("\n\tJSON body of 'key', 'value', both strings.");
-        b.Append("\n");
-        b.Append("\n/ini/<INI file alias>/GetKey");
-        b.Append("\n\tJSON body of 'key', a string.");
-
-        return b.ToString();
+        return String.Join('\n', new string[] {
+            "/ini/<INI file alias>/PutKeyValue",
+            "\tJSON body of 'key', 'value', both strings.",
+            "",
+            "/ini/<INI file alias>/GetKey",
+            "\tJSON body of 'key', a string." });
         // (This endpoint is really just for a basic routing test.)
     }
 
     public IResult
-    PutKeyValue(string name, [FromBody] PutKeyValueRequest body)
+    PutKeyValue(string alias, [FromBody] PutKeyValueRequest body)
     {
-        string filename = name + ".ini";
+        string filename = alias + ".ini";
         if (!IsAllowedINIFilename(filename))
             return Results.BadRequest(
-                DisallowedINIFilenameError(name));
+                DisallowedINIFilenameError(alias));
 
         INIApi.Put(filename, body.key, body.value);
         return Results.Ok();
     }
 
     public IResult
-    GetValue(string name, [FromBody] GetValueRequest body)
+    GetValue(string alias, [FromBody] GetValueRequest body)
     {
-        string filename = name + ".ini";
+        string filename = alias + ".ini";
         if (!IsAllowedINIFilename(filename))
             return Results.BadRequest(
-                DisallowedINIFilenameError(name));
+                DisallowedINIFilenameError(alias));
         
         string? value = INIApi.Get(filename, body.key);
-        return Results.Ok<string?>(value);
+        if (value == null) return Results.NotFound();
+        else return Results.Ok<string>(value);
     }
 
 //  ---%-@-%---
@@ -62,17 +61,17 @@ IniController : Controller
     IsAllowedINIFilename(string filename)
     {
         return new string[] {
-            "colours"
+            "colours.ini"
         }.Contains(filename);
     }
 
     private static JsonObject
-    DisallowedINIFilenameError(string name)
+    DisallowedINIFilenameError(string alias)
     {
-        string msg = "'" + name + "' is not an allowed INI file name.";
-        JsonObject returnee = new();
-        returnee.Add("error", msg);
-        return returnee;
+        string msg =
+            "'" + alias + "' " +
+            "is not an allowed INI file alias.";
+        return new JsonObject() { { "error", msg } };
     }
 
     
