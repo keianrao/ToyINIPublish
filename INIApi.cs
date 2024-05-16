@@ -29,9 +29,6 @@ INIApi {
     public static string?
     Get(string filename, string key)
     {
-        SortedDictionary<string, string> interim = 
-            IniFileToSortedDictionary(filename);
-
         return IniFileToSortedDictionary(filename)
             .GetValueOrDefault(key);
     }
