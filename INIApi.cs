@@ -12,15 +12,22 @@ You should have received a copy of the GNU General Public License along with thi
 copyright */
 
 
+using System.Reflection.Metadata;
+
 public class
 IniApi {
 
     public static void
     Put(string filename, string key, string value)
     {
-        SortedDictionary<string, string> interim =
-            IniFileToSortedDictionary(filename);
-
+        SortedDictionary<string, string> interim;
+        try {
+            interim = IniFileToSortedDictionary(filename);
+        }
+        catch (FileNotFoundException) {
+            interim = new();
+        }
+        
         key = TransformNonCategorisedKey(key);
         interim[key] = value;
         
@@ -37,9 +44,9 @@ IniApi {
     public static bool
     IsAllowedINIFilename(string filename)
     {
-        Console.WriteLine(filename);
         return new string[] {
-            "colours.ini"
+            "colours.ini",
+            "ProgramTesting.ini"
         }.Contains(filename);
     }
 

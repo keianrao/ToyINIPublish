@@ -97,7 +97,19 @@ FluentValidatorTests {
     public void
     PutValidKeyAndValue()
     {
-        
+        PutKeyValueValidator valid = new();
+
+        valid.TestValidate(
+            new PutKeyValueRequest() {
+                Key = "rain", Value = "A somewhat dark grey." })
+            .ShouldNotHaveAnyValidationErrors();
+
+        valid.TestValidate(
+            new PutKeyValueRequest() {
+                Key = "reds.dark.maroon",
+                Value = "A dark, low-saturation red "
+                    + "oft used for clothing." })
+            .ShouldNotHaveAnyValidationErrors();
     }
 
     [Test]
@@ -130,7 +142,19 @@ FluentValidatorTests {
     public void
     GetValidKey()
     {
+        GetValueValidator valid = new();
 
+        valid.TestValidate(
+            new GetValueRequest() { Key = "Coffee" })
+            .ShouldNotHaveAnyValidationErrors();
+
+        valid.TestValidate(
+            new GetValueRequest() { Key = "Porcelain" })
+            .ShouldNotHaveAnyValidationErrors();
+
+        valid.TestValidate(
+            new GetValueRequest() { Key = "skyblue" })
+            .ShouldNotHaveAnyValidationErrors();
     }
 
 }
