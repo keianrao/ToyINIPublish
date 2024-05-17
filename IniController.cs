@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Mvc;
 using FluentValidation;
 using FluentValidationResult = FluentValidation.Results
     .ValidationResult;
-using System.Linq.Expressions;
 
 public class
 IniController : Controller
@@ -46,7 +45,7 @@ IniController : Controller
 
         string filename = alias + ".ini";
 
-        INIApi.Put(filename, body.Key, body.Value);
+        IniApi.Put(filename, body.Key, body.Value);
         return Results.Ok();
     }
 
@@ -64,7 +63,7 @@ IniController : Controller
 
         string filename = alias + ".ini";
         
-        string? value = INIApi.Get(filename, body.Key);
+        string? value = IniApi.Get(filename, body.Key);
         if (value == null) return Results.NotFound();
         else return Results.Ok<string>(value);
     }
@@ -95,7 +94,7 @@ IniFileAliasValidator : AbstractValidator<string> {
         RuleFor(s => s).NotNull();
         RuleFor(s => s).Must(s => !s.EndsWith(".ini"));
         RuleFor(s => s).Must(s =>
-            INIApi.IsAllowedINIFilename(s + ".ini"));
+            IniApi.IsAllowedINIFilename(s + ".ini"));
     }
 
 }

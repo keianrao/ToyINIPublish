@@ -13,7 +13,7 @@ copyright */
 
 
 public class
-INIApi {
+IniApi {
 
     public static void
     Put(string filename, string key, string value)
@@ -37,6 +37,7 @@ INIApi {
     public static bool
     IsAllowedINIFilename(string filename)
     {
+        Console.WriteLine(filename);
         return new string[] {
             "colours.ini"
         }.Contains(filename);
